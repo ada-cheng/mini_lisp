@@ -1,0 +1,42 @@
+为什么 Tokenizer::tokenize 接受的形参类型是 const std::string& 而不是 std::string？可不可以用 std::string？
+ans:
+传引用可以减少复制开销,使用const,保证不改变接受的字符串。
+如果只是想跑通代码那么使用std::string也是可以的。
+
+
+
+为什么使用 TokenPtr，也即 std::unique_ptr<Token>？如果改用 Token*，会有什么影响？
+ans:
+std::unique_ptr是独占所有权的智能指针。
+任意时刻，只能有一个指针指向同一对象。
+这样可以防止当有两个指针指向同一对象时，不小心会重复释放的问题。
+这种RAII的设计模式有利于异常处理时自动析构指针。
+如果用的是Token*，那么当Tokenizer::tokenize调用过程中发生异常时，指针就没法delete，这会造成内存泄漏。
+
+
+main 函数中 std::cout << *token 是如何实现的？
+ans:
+<<符号被重载，
+std::ostream& operator<<(std::ostream& os, const Token& token) {
+    return os << token.toString();
+}
+返回输出流，用os输出将token转为string的结果
+
+
+
+当词法分析出现错误时，程序是如何进行错误处理的？
+ans:
+程序会throw SyntaxError，程序将开始“回溯”；
+回溯到最近的 try-catch 块；如果这个 catch 的类型是被 throw 的表达式的类型，那么就执行 catch 块的内容，所以会回溯到
+catch (std::runtime_error& e) {
+            std::cerr << "Error: " << e.what() << std::endl;
+}
+输出错误内容。
+由于main主函数是一个循环，所以在输出错误信息后，主程序会继续允许，等待接收下一次的输入，程序并不会直接结束运行。
+
+
+
+* 使用 std::deque<TokenPtr> 相比 std::vector<TokenPtr> 的好处是什么？
+deque 是随机访问的，满足了tokenize函数的需求，由于不需要p-q恰好是其所“指向的元素”的地址的差，所以可以不用vector。
+而deque可以更灵活地使用内存。
+双向队列push_back,push_front是O(1)的。而vector的insert是O(n)的。

@@ -1,0 +1,3 @@
+D:/mini_lisp/path/CMakeFiles/mini_lisp.dir
+D:/mini_lisp/path/CMakeFiles/ALL_BUILD.dir
+D:/mini_lisp/path/CMakeFiles/ZERO_CHECK.dir
