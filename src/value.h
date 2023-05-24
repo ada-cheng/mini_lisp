@@ -9,16 +9,21 @@
 #include <algorithm>
 #include <iomanip>
 #include <iterator>
+#include <optional>
 using std::string;
 using std::to_string;
-using ValuePtr = std::shared_ptr<Value>;
+
 class Value {
     public:
-        virtual string toString() = 0;
+    virtual string toString() = 0;
+    std::optional<std::string> asSymbol();
+  
     
       
 
 };
+
+using ValuePtr = std::shared_ptr<Value>;
 
 
 class StringValue : public Value {
@@ -50,7 +55,11 @@ public:
         {
             return to_string((int)value);
         
-        return to_string(value);
+        //保留6位小数
+        }else{
+            std::ostringstream oss;
+            oss << std::setprecision(6) << value;
+            return oss.str();
     }
 }
 };
@@ -133,5 +142,13 @@ public:
    
 };
 
+std::optional<std::string> Value::asSymbol()
+{
+    if (typeid(*this) == typeid(SymbolValue))
+    {
+            return this->toString();
+    }
+    return std::nullopt;
+}
 
 #endif
