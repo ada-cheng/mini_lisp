@@ -6,10 +6,9 @@
 #include "./error.h"
 #include "./parser.h"
 #include "./eval_env.h"
-
+#include "rjsj_test.hpp"
 using ValuePtr = std::shared_ptr<Value>;
 
-#include "rjsj_test.hpp"
 struct TestCtx {
     EvalEnv env;
     std::string eval(std::string input) {
@@ -22,10 +21,13 @@ struct TestCtx {
 };
 
 int main() {
-    RJSJ_TEST(TestCtx, Lv2, Lv3);
+     
+        
+       RJSJ_TEST(TestCtx, Lv2, Lv3, Lv4, Lv5);
+         EvalEnv env;
     while (true) {
         try {
-            
+          
             std::cout << ">>> " ;
             std::string line;
             std::getline(std::cin, line);
@@ -35,7 +37,7 @@ int main() {
             auto tokens = Tokenizer::tokenize(line);
             Parser parser(std::move(tokens));
             auto value = parser.parse();
-            EvalEnv env;
+           
             auto result = env.eval(std::move(value));
             std::cout << result->toString() << std::endl;
         } catch (std::runtime_error& e) {

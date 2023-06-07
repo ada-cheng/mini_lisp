@@ -1,13 +1,28 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="D:\mini_lisp\src\builtins.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\mini_lisp\src\eval_env.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\mini_lisp\src\forms.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="D:\mini_lisp\src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\mini_lisp\src\parser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="D:\mini_lisp\src\token.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="D:\mini_lisp\src\tokenizer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\mini_lisp\src\value.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

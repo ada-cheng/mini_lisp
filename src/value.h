@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <iterator>
 #include <optional>
+#include "./error.h"
 using std::string;
 using std::to_string;
 
@@ -17,14 +18,9 @@ class Value {
     public:
     virtual string toString() = 0;
     std::optional<std::string> asSymbol();
-  
-    
-      
 
 };
-
 using ValuePtr = std::shared_ptr<Value>;
-
 
 class StringValue : public Value {
 public:
@@ -96,7 +92,7 @@ public:
             if (current->cdr != nullptr && typeid(*current->cdr) == typeid(PairValue)) {
                 current = static_cast<PairValue*>(current->cdr.get());
             } else {
-                if (current->cdr != nullptr) {
+                if (current->cdr != nullptr && typeid(*current->cdr) != typeid(NilValue)) {
                     result.push_back(current->cdr);
                 }
                 break;
@@ -142,13 +138,40 @@ public:
    
 };
 
-std::optional<std::string> Value::asSymbol()
-{
-    if (typeid(*this) == typeid(SymbolValue))
+class LambdaValue : public Value {
+private:
+    std::vector<std::string> params;
+    std::vector<ValuePtr> body;
+    // [...]
+public:
+    LambdaValue(std::vector<std::string> params, std::vector<ValuePtr> body) : params(params), body(body) {}
+
+
+    std::string toString()  // 如前所述，返回 #<procedure> 即可
     {
-            return this->toString();
+        return "#<procedure>";
     }
-    return std::nullopt;
-}
+};
+
+
+using BuiltinFuncType = ValuePtr(const std::vector<ValuePtr>&);
+class BuiltinProcValue : public Value {
+
+public:
+    BuiltinFuncType* func;
+    BuiltinProcValue(BuiltinFuncType* func) : func(func) {}
+    std::string toString()  
+    {
+        return "#<procedure>";
+    }
+    ValuePtr proc (const std::vector<ValuePtr>& args)
+    {
+      /*   std::cout<<"proc"<<std::endl; */
+        
+        return func(args);
+    }
+   
+   
+};
 
 #endif
