@@ -82,6 +82,21 @@ public:
     std::shared_ptr<Value> car;
     std::shared_ptr<Value> cdr;
     PairValue(std::shared_ptr<Value> car, std::shared_ptr<Value> cdr) : car(car), cdr(cdr) {}
+    /*
+    PairValue(std::vector<ValuePtr> values) {
+        if (values.size() == 0) {
+            this->car = nullptr;
+            this->cdr = nullptr;
+        } else {
+            this->car = values[0];
+            if (values.size() == 1) {
+                this->cdr = nullptr;
+            } else {
+                this->cdr = std::make_shared<PairValue>(std::vector<ValuePtr>(values.begin() + 1, values.end()));
+            }
+        }
+    }
+    */
     std::vector<ValuePtr> toVector() {
         std::vector<ValuePtr> result;
         PairValue *current = this;
@@ -137,24 +152,27 @@ public:
     }
    
 };
-
+class EvalEnv ;
 class LambdaValue : public Value {
 private:
     std::vector<std::string> params;
     std::vector<ValuePtr> body;
+    std::shared_ptr<EvalEnv> env;
     // [...]
 public:
-    LambdaValue(std::vector<std::string> params, std::vector<ValuePtr> body) : params(params), body(body) {}
+    LambdaValue(std::vector<std::string> params, std::vector<ValuePtr> body, std::shared_ptr<EvalEnv> env) ;
+    std::string toString() ;
+    std::vector<std::string> getParams() const ;
+    std::vector<ValuePtr> getBody() const ;
+    std::shared_ptr<EvalEnv> getEnv() const ;
+    ValuePtr apply(const std::vector<ValuePtr>& args);
+    
 
-
-    std::string toString()  // 如前所述，返回 #<procedure> 即可
-    {
-        return "#<procedure>";
-    }
+   
 };
 
 
-using BuiltinFuncType = ValuePtr(const std::vector<ValuePtr>&);
+using BuiltinFuncType = ValuePtr(const std::vector<ValuePtr>&, EvalEnv&);
 class BuiltinProcValue : public Value {
 
 public:
@@ -164,12 +182,18 @@ public:
     {
         return "#<procedure>";
     }
-    ValuePtr proc (const std::vector<ValuePtr>& args)
+    ValuePtr proc (const std::vector<ValuePtr>& args, EvalEnv& env)
     {
-      /*   std::cout<<"proc"<<std::endl; */
+ 
         
-        return func(args);
+        return func(args,env);
     }
+
+    BuiltinFuncType* getFunc() const {
+        return func;
+    }
+
+
    
    
 };

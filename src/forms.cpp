@@ -3,9 +3,24 @@
 #include <unordered_map>
 #include "./value.h"
 #include "./forms.h"
+
 #include <vector>
 
-
+ValuePtr listtt(const std::vector<ValuePtr>& args, EvalEnv& env)
+{
+    if (args.size()==0)
+    {
+        return std::make_shared<PairValue>(nullptr, nullptr);
+    }
+    if (args.size()==1)
+    {
+        return std::make_shared<PairValue>(args[0], nullptr);
+    }
+    else
+    {
+        return std::make_shared<PairValue>(args[0], listtt(std::vector<ValuePtr>(args.begin()+1, args.end()), env));
+    }
+}
 
 ValuePtr quoteForm(const std::vector<ValuePtr>& args, EvalEnv& environment) 
 {
@@ -86,8 +101,8 @@ ValuePtr lambdaForm(const std::vector<ValuePtr>& args, EvalEnv& environment)
             throw LispError("Malformed lambda.");
         }
     }
-    auto body = static_cast<PairValue&>(*args[2]).toVector();
-    return std::make_shared<LambdaValue>(param_names, body);
+    std::vector<ValuePtr> body(args.begin() + 2, args.end());
+    return std::make_shared<LambdaValue>(param_names, body, environment.shared_from_this());
 }
 
 ValuePtr defineForm(const std::vector<ValuePtr>& args, EvalEnv& environment) 
@@ -96,6 +111,7 @@ ValuePtr defineForm(const std::vector<ValuePtr>& args, EvalEnv& environment)
     if (args.size() < 3) {
         throw LispError("Malformed define.");
     }
+
     if (typeid(*args[1]) == typeid(PairValue)) {
         auto params = static_cast<PairValue&>(*args[1]).toVector();
         if (params.size() < 1) {
@@ -110,8 +126,13 @@ ValuePtr defineForm(const std::vector<ValuePtr>& args, EvalEnv& environment)
                     throw LispError("Malformed define.");
                 }
             }
-            auto body = static_cast<PairValue&>(*args[2]).toVector();
-            environment.env[*name] = std::make_shared<LambdaValue>(param_names, body);
+          
+            std::vector<ValuePtr> body(args.begin() + 2, args.end());
+
+
+     
+           
+            environment.defineBinding(*name, std::make_shared<LambdaValue>(param_names, body, environment.shared_from_this()));
             NilValue nil;
             return std::make_shared<NilValue>(nil);
         } else {
@@ -120,8 +141,8 @@ ValuePtr defineForm(const std::vector<ValuePtr>& args, EvalEnv& environment)
     } else
     if (auto name = args[1]->asSymbol()) {
        // add to environment
-       //do not use []
-        environment.env[*name] = environment.eval(args[2]);
+ 
+        environment.defineBinding(*name, environment.eval(args[2]));
      
         NilValue nil;
         return std::make_shared<NilValue>(nil);
@@ -132,11 +153,137 @@ ValuePtr defineForm(const std::vector<ValuePtr>& args, EvalEnv& environment)
   
 }   
 
+ValuePtr condForm(const std::vector<ValuePtr> &args, EvalEnv& env)
+{
+    ValuePtr res;
+    if (args.size() == 1)
+    {
+        throw LispError("cond clause is empty");
+    }
+    std::vector<ValuePtr> vec;
+    for (int i = 1;i<args.size();i++)
+    {
+        vec.push_back(args[i]);
+    }
+    for (auto ele : vec)
+    {
+        auto vec = static_cast<PairValue&>(*ele).toVector();
+        
+        if (vec[0]->toString() == "else")
+        {
+            res = std::make_shared<BooleanValue>(true);
+            for (auto i = 1;i<vec.size();i++)
+            {
+                res = env.eval(vec[i]);
+            }   
+            return res;
+        }
+        auto condition = env.eval(vec[0]);
+        if (condition->toString() != "#f")
+        {
+            res = env.eval(vec[0]);
+            for (auto i = 1;i<vec.size();i++)
+            {
+                res = env.eval(vec[i]);
+            }
+            return res;
+        }
+       
+    }
+   
+    return res;
+
+}
+
+ValuePtr beginForm(const std::vector<ValuePtr>& args, EvalEnv& env)
+{
+    ValuePtr res;
+    for (auto i = 1;i<args.size();i++)
+    {
+        res = env.eval(args[i]);
+    }
+    return res;
+}
+
+
+ValuePtr letForm(const std::vector<ValuePtr>& args, EvalEnv& env)
+{
+    if (args.size() < 3)
+    {
+        throw LispError("Malformed let.");
+    }
+    if (typeid(*args[1]) != typeid(PairValue))
+    {
+        throw LispError("Malformed let.");
+    }
+    auto params = static_cast<PairValue&>(*args[1]).toVector();
+    std::vector<std::string> param_names;
+    std::vector<ValuePtr> param_values;
+    for (auto param : params)
+    {
+        auto name = static_cast<PairValue&>(*param).toVector()[0];
+        auto value = static_cast<PairValue&>(*param).toVector()[1];
+        //添加绑定
+       // std::cout << "name:" << name->toString() << std::endl;
+      //  std::cout << "value:" << value->toString() << std::endl;
+        param_names.push_back(*name->asSymbol());
+        param_values.push_back(env.eval(value));
+    }
+    std::vector<ValuePtr> body(args.begin() + 2, args.end());
+
+    auto result = std::make_shared<LambdaValue>(param_names, body, env.shared_from_this());
+  
+ 
+    return  result->apply(param_values);
+    
+}
+
+
+
+ValuePtr quasiquoteForm(const std::vector<ValuePtr> & args, EvalEnv& env)
+{
+   
+    std::vector<ValuePtr> ans;
+    std::vector<ValuePtr> vecc;
+    vecc = static_cast<PairValue&>(*args[1]).toVector();
+    for (auto expr : vecc)
+    {
+        if (typeid(*expr) == typeid(PairValue))
+        {
+            auto vec = static_cast<PairValue&>(*expr).toVector();
+            
+            if (vec[0]->toString() == "unquote" || vec[0]->toString()==",")
+            {
+                ans.push_back(env.eval(vec[1]));
+            }
+            else
+            {
+                ans.push_back(expr);
+        }
+        }
+        else
+        {
+            ans.push_back(expr);
+        }
+    }
+    return listtt(ans, env);
+}
+    
+
+
+
+
 std::unordered_map<std::string, SpecialFormType*> SPECIAL_FORMS{
     {"define", defineForm},
     {"quote", quoteForm},
     {"if", ifForm},
     {"and", andForm},
     {"or", orForm},
-    {"lambda", lambdaForm}
+    {"lambda", lambdaForm},
+    {"cond", condForm},
+    {"begin", beginForm},
+    {"let", letForm},
+    {"quasiquote", quasiquoteForm},
+    {"`", quasiquoteForm}
+   
 };
